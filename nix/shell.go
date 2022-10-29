@@ -16,6 +16,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.jetpack.io/devbox/debug"
+	"go.jetpack.io/devbox/pkg/gate"
 )
 
 //go:embed shellrc.tmpl
@@ -178,6 +179,24 @@ func (s *Shell) Run(nixShellFilePath string) error {
 		"__ETC_PROFILE_NIX_SOURCED=1",
 	)
 	debug.Log("Running nix-shell with environment: %v", env)
+
+	if gate.Flakes() {
+		if s.binPath == "" {
+			return errors.New("Unsupported for flakes: shell having no binPath")
+		}
+		cmd := exec.Command("nix", "develop", ".devbox/gen/flake")
+		cmd.Args = append(cmd.Args, "--verbose")
+		cmd.Args = append(cmd.Args, "--ignore-environment")
+		cmd.Args = append(cmd.Args, "--command", "/bin/bash", "-c", s.execCommand())
+		cmd.Args = append(cmd.Args, toKeepArgs(env)...)
+		cmd.Env = env
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		debug.Log("Executing nix develop command: %v", cmd.Args)
+		return errors.WithStack(cmd.Run())
+	}
 
 	// Launch a fallback shell if we couldn't find the path to the user's
 	// default shell.
