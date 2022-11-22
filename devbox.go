@@ -21,7 +21,6 @@ import (
 	"go.jetpack.io/devbox/debug"
 	"go.jetpack.io/devbox/docker"
 	"go.jetpack.io/devbox/nix"
-	"go.jetpack.io/devbox/pkg/gate"
 	"go.jetpack.io/devbox/pkgcfg"
 	"go.jetpack.io/devbox/planner"
 	"go.jetpack.io/devbox/planner/plansdk"
@@ -490,7 +489,7 @@ func (d *Devbox) applyDevNixDerivation() error {
 	}
 
 	var cmd *exec.Cmd
-	if gate.Flakes() {
+	if featureflag.Flakes() {
 		cmd = exec.Command("nix", "profile", "install", "--profile", profileDir, ".devbox/gen/flake")
 	} else {
 		cmd = exec.Command(

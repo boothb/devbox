@@ -15,8 +15,8 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+	"go.jetpack.io/devbox/boxcli/featureflag"
 	"go.jetpack.io/devbox/debug"
-	"go.jetpack.io/devbox/pkg/gate"
 )
 
 //go:embed shellrc.tmpl
@@ -180,7 +180,7 @@ func (s *Shell) Run(nixShellFilePath string) error {
 	)
 	debug.Log("Running nix-shell with environment: %v", env)
 
-	if gate.Flakes() {
+	if featureflag.Flakes() {
 		if s.binPath == "" {
 			return errors.New("Unsupported for flakes: shell having no binPath")
 		}
@@ -188,7 +188,7 @@ func (s *Shell) Run(nixShellFilePath string) error {
 		cmd.Args = append(cmd.Args, "--verbose")
 		cmd.Args = append(cmd.Args, "--ignore-environment")
 		cmd.Args = append(cmd.Args, "--command", "/bin/bash", "-c", s.execCommand())
-		cmd.Args = append(cmd.Args, toKeepArgs(env)...)
+		cmd.Args = append(cmd.Args, toKeepArgs(env, buildAllowList(s.env))...)
 		cmd.Env = env
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
